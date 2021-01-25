@@ -1,4 +1,4 @@
-# Dualfoil GUI
+# Dualfoil GUI &nbsp; &nbsp; &nbsp;![](bin/main_icon.png)
 
 Python GUI to use the Dualfoil Fortran code from John Newman.
 This is an adaption of the code by Lucas Darby Robinson, R. Edwin García (2016), "Dualfoil.py: Porous Electrochemistry for Rechargeable Batteries," https://nanohub.org/resources/dualfoil. (DOI: 10.4231/D3KP7TS5M).
