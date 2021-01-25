@@ -6,6 +6,8 @@
  #
  #  Author: Alex Bartol <nanohub@alexbartol.com>
  #       Copyright 2009
+ #  Author: Jonas A. Krieger <econversion@empa.ch>
+ #       Copyright 2021
  #
  # 
  # VKMLgui.py is a utility to allow for user input on the fly with a simple
@@ -31,19 +33,21 @@ from copy import deepcopy
 from threading import Thread
 import sys
 
+from types import FunctionType
+
 from VKML.gui.tk.Parameter import Parameter
-from VKML.gui.tk.Menu import Menu
+from VKML.gui.tk.Menu import Menu, DropDownMenu
 from VKML.gui.tk.Gui import _GetParams
 
 
 def RunDualfoilHelp():
 	#For ordering parameters
 
-	print '\033[1m'+'-------------------------------------------------\
+	print('\033[1m'+'-------------------------------------------------\
 	\nTo pass in a new value for a parameter, type:\
 	\n"python dualfoil.py '+'\033[0m'+'--'+'\033[1m'+'parameter=X"\
 	\nwhere X is the desired value for that parameter.\
-	\n-------------------------------------------------'
+	\n-------------------------------------------------')
 	
 	
 	#AND_OPT = ('MCMB 2528 graphite (Bellcore)','Carbon (petroleum coke)',\
@@ -51,9 +55,9 @@ def RunDualfoilHelp():
 	              #'Lonza KS6 graphite', 'Albertus MH (Use for NiMH)')
 	#(3, 2, 1, 4, 5, 6, 7)
 	
-	print '\033[1m'+'------Anode Material Properties------'+'\033[0m'
+	print('\033[1m'+'------Anode Material Properties------'+'\033[0m')
 	
-	print '\
+	print('\
 	\nanode_material:\
 	\n		1 for Lithium foil\
 	\n		2 for Carbon (petroleum coke)\
@@ -66,12 +70,12 @@ def RunDualfoilHelp():
 	\nanode_capacity=: Anode coulombic capacity (mAh/g)\
 	\nanode_capacitance: Anode insertion material capacitance (F/m^2)\
 	\nanode_insertion_density: Anode insertion material density (kg/m^3)\
-	\nanode_collector_density\n: Anode current collector material density (kg/m^3)'
+	\nanode_collector_density\n: Anode current collector material density (kg/m^3)')
 	
 	
-	print '\033[1m'+'------Anode Geometric Parameters------'+'\033[0m'
+	print('\033[1m'+'------Anode Geometric Parameters------'+'\033[0m')
 	
-	print '\
+	print('\
 	\nanode_thickness: Anode thickness (microns)\
 	\nanode_collector_thickness: Anode current collector thickness (microns)\
 	\nanode_stoich_parameter: Anode initial stoichiometric parameter (0<x<1)\
@@ -79,23 +83,23 @@ def RunDualfoilHelp():
 	\nanode_electrolyte_volfrac: Volume fraction of electrolyte in anode\
 	\nanode_polymer_volfrac: Volume fraction of polymer in anode\
 	\nanode_filler_volfrac: Volume fraction of filler in anode\
-	\nanode_gas_volfrac: Volume fraction of gas in anode\n'
+	\nanode_gas_volfrac: Volume fraction of gas in anode\n')
 	
 	
 	#Parameters for 'Anode Transport Parameters'
 	#MVDC1_OPT = ('No', 'Yes')
 	
 	
-	print '\033[1m'+'------Anode Transport Parameters------'+'\033[0m'
+	print('\033[1m'+'------Anode Transport Parameters------'+'\033[0m')
 	
-	print '\
+	print('\
 	\nanode_diff_coef: Diffusion coefficient for negative material (m^2/s)\
 	\nanode_vary_diff: Flag for allowing variable diffusion in anode (0=no, 1=yes)\
 	\nanode_matrix_conductivity: Conductivity of negative matrix (S/m)\
 	\nanode_bulk_rate: Reaction rate of bulk negative material\
 	\nanode_rate_side1: Rate of anode side reaction 1\
 	\nanode_rate_side2: Rate of anode side reaction 2\
-	\nanode_rate_side3: Rate of anode side reaction 3\n'
+	\nanode_rate_side3: Rate of anode side reaction 3\n')
 	
 	#Parameters for 'Separator Physical Parameters'
 	
@@ -110,9 +114,9 @@ def RunDualfoilHelp():
 	              'Paxton 30% KOH in H2O')
 	#(7, 2, 3, 4, 5, 6, 1, 9, 10, 11, 12, 13)
 	
-	print '\033[1m'+'------Separator Physical Parameters------'+'\033[0m'
+	print('\033[1m'+'------Separator Physical Parameters------'+'\033[0m')
 	
-	print '\
+	print('\
 	\nsep_material:\
 	\n		1 for AsF6 in methyl acetate\
 	\n		2 for Perchlorate in PEO\
@@ -133,7 +137,7 @@ def RunDualfoilHelp():
 	\nsep_polymer_volfrac: Volume fraction of polymer in separator\
 	\npolymer_density: Polymer density (kg/m^3)\
 	\nfiller_density: Inert filler density (kg/m^3)\
-	\nsep_gas_volfrac: Volume fraction of gas in separator\n'
+	\nsep_gas_volfrac: Volume fraction of gas in separator\n')
 	
 	
 	#Parameters for 'Cathode Material Properties'
@@ -151,22 +155,22 @@ def RunDualfoilHelp():
 	              'LiyAl0.2Mn1.8O4F0.2 Bellcore doped spinel (0.21 < y < 1.0)', \
 	              'Albertus NiOOH (Use for NiMH)')
 	
-	print '\033[1m'+'------Cathode Material Properties------'+'\033[0m'
+	print('\033[1m'+'------Cathode Material Properties------'+'\033[0m')
 	
 	
-	print '\
+	print('\
 	\ncathode_material:\
 	\ncathode_film_resistance: Cathode film resistance (Ohm-m^2)\
 	\ncathode_capacity: Cathode coulombic capacity (mAh/g)\
 	\ncathode_capacitance: Cathode insertion material capacitance (F/m^2)\
 	\ncathode_insertion_density: Cathode insertion material density (kg/m^3)\
-	\ncathode_collector_density: Cathode current collector material density (kg/m^3)\n'
+	\ncathode_collector_density: Cathode current collector material density (kg/m^3)\n')
 	
 	
-	print '\033[1m'+'------Cathode Spatial Parameters------'+'\033[0m'
+	print('\033[1m'+'------Cathode Spatial Parameters------'+'\033[0m')
 	
 	
-	print '\
+	print('\
 	\ncathode_thickness: Cathode thickness (microns)\
 	\ncathode_collector_thickness: Cathode current collector thickness (microns)\
 	\ncathode_stoich_parameter: Cathode initial stoichiometric parameter (0<x<1)\
@@ -174,31 +178,31 @@ def RunDualfoilHelp():
 	\ncathode_electrolyte_volfrac: Volume fraction of electrolyte in cathode\
 	\ncathode_polymer_volfrac: Volume fraction of polymer in cathode\
 	\ncathode_filler_volfrac: Volume fraction of inert filler in cathode\
-	\ncathode_gas_volfrac: Volume fraction of gas in cathode\n'
+	\ncathode_gas_volfrac: Volume fraction of gas in cathode\n')
 	
 	
-	print '\033[1m'+'------Cathode Transport Parameters------'+'\033[0m'
+	print('\033[1m'+'------Cathode Transport Parameters------'+'\033[0m')
 	MVDC3_OPT = ('No', 'Yes')
 	
-	print '\
+	print('\
 	\ncathode_diff_coef: Diffusion coefficient for positive material (m^2/s)\
 	\ncathode_vary_diff: Flag for allowing variable diffusion in cathode (0=no, 1=yes)\
 	\ncathode_matrix_conductivity: Conductivity of positive matrix (S/m)\
 	\ncathode_bulk_rate: Reaction rate of bulk positive material\
 	\ncathode_rate_side1: Rate of cathode side reaction 1\
 	\ncathode_rate_side2: Rate of cathode side reaction 2\
-	\ncathode_rate_side3: Rate of cathode side reaction 3\n'
+	\ncathode_rate_side3: Rate of cathode side reaction 3\n')
 	
 	
 	
-	print '\033[1m'+'------Initial Conditions------'+'\033[0m'
+	print('\033[1m'+'------Initial Conditions------'+'\033[0m')
 	
-	print '\
+	print('\
 	\nbattery_temp: Initial battery temperature (K)\
 	\ninitial_salt_conc: Initial salt concentration (mol/m^3)\
 	\nambient_air_temp: Ambient air temperature (K)\
 	\nsystem_heat_capacity: Heat capacity of the system (J/kg-K)\
-	\ncells_in_stack: Number of cells in a cell stack\n'
+	\ncells_in_stack: Number of cells in a cell stack\n')
 	
 	#Parameters for 'Initial Conditions (Cont.)'
 	
@@ -212,16 +216,16 @@ def RunDualfoilHelp():
 	##SIDE REACTION DROPDOWN OPTIONS
 	NSIDE_OPT = ('No', 'Yes')
 	
-	print '\033[1m'+'------Initial Conditions (Cont.)------'+'\033[0m'
+	print('\033[1m'+'------Initial Conditions (Cont.)------'+'\033[0m')
 	
-	print '\
+	print('\
 	\nheat_transfer_setting: 0 uses heat transfer coef., 1 calculates it,  2 isothermal\
 	\nheat_transfer_end: Heat transfer coef. at ends (W/m^2-K)\
 	\nelectrolyte_distribution: 0 for electrolyte in sep. only, 1 for uniform\
 	\nimpedance: 0 for no impedance, 1 for impedance\
-	\nside_reaction_flag: Flag to turn on (1) or off (0) side reactions\n'
+	\nside_reaction_flag: Flag to turn on (1) or off (0) side reactions\n')
 	
-	print '\033[1m'+'------Boundary Conditions------'+'\033[0m'
+	print('\033[1m'+'------Boundary Conditions------'+'\033[0m')
 	
 	##SEGMENT MODE DROPDOWN OPTIONS
 	MODE_OPT = ('Galvanostatic to a cutoff potential (in A/m2)', 'Galvanostatic for given time (in A/m2)',\
@@ -229,7 +233,7 @@ def RunDualfoilHelp():
 	              'Galvanostatic with tapered current after cutoff potential (in A/m2)',\
 	              'Specified power (in W/m2)', 'Specified load (in Ohm-m2)')
 	
-	print '\
+	print('\
 	\nsegment_mode:\
 	\n		0 for potentiostatic (in V)\
 	\n		1 for Galvanostatic for given time (in A/m2)\
@@ -246,18 +250,18 @@ def RunDualfoilHelp():
 	\ncutoff_condition: Simulation time (min) OR potential cutoff (V)\
 	\nlow_voltage_cutoff: Low vaoltage cutoff (V)\
 	\nhigh_voltage_cutoff: High voltage cutoff (V)\
-	\ninternal_resistance: Internal resistance (Ohm-m^2)\n'
+	\ninternal_resistance: Internal resistance (Ohm-m^2)\n')
 	
 	
 	
 	
-	print '\033[1m'+'------Solver and Numerical Parameters------'+'\033[0m'
+	print('\033[1m'+'------Solver and Numerical Parameters------'+'\033[0m')
 	
 	
 	##POWER PEAK DROPDOWN OPTIONS
 	PP_OPT = ('Exclude power peaks', 'Include power peaks')
 	
-	print '\
+	print('\
 	\niteration_limit: Limit on number of iterations during calculation\
 	\nmax_timestep_size: Maximum time step size (s)\
 	\nanode_node_count: Number of nodes in negative electrode\
@@ -265,13 +269,13 @@ def RunDualfoilHelp():
 	\ncathode_node_count: Number of nodes in positive electrode\
 	\nparticle_node_count: Number of nodes in solid particle\
 	\nconverge_condition: Number of iterations required for solid phase convergence\
-	\npower_peaks: 0 for no power peaks, 1 for power peaks\n'
+	\npower_peaks: 0 for no power peaks, 1 for power peaks\n')
 	
 	
 	
-	print '\033[1m'+'------Activation Energy------'+'\033[0m'
+	print('\033[1m'+'------Activation Energy------'+'\033[0m')
 	
-	print'\
+	print('\
 	\nEbarS1: Solid state diffusion in anode (J/mol)\
 	\nEbarS3: Solid state diffusion in cathode (J/mol)\
 	\nEbarkap: Electrolyte conductivity (J/mol)\
@@ -285,21 +289,21 @@ def RunDualfoilHelp():
 	\nEbarks3a: Negative shuttle side reaction (J/mol)\
 	\nEbarks3c: Positive shuttle side reactions (J/mol)\
 	\nEbarr1: Anode film resistance (J/mol)\
-	\nEbarr3: Cathode film resistance (J/mol)\n'
+	\nEbarr3: Cathode film resistance (J/mol)\n')
 	
 	              
 	              
 	              
-	print '\033[1m'+'------Scheduled Output------'+'\033[0m'
+	print('\033[1m'+'------Scheduled Output------'+'\033[0m')
 	
-	print '\
+	print('\
 	\ndirectory: The directory in which the output will be generated\
 	\nnode_freq: Save every ith node where i=node_freq\
-	\ntime_step_freq: Save every nth time step where n=time_step_freq\n'
+	\ntime_step_freq: Save every nth time step where n=time_step_freq\n')
 
 
 def RunVisualizeHelp():
-	print 'visualize help info'
+	print('visualize help info')
 
 class Parser:
     """ Parser is designed to be an easy way to get input from the typical
@@ -320,6 +324,7 @@ class Parser:
         self.update_text = update_text
         self.params = []
         self.tabs = []
+        self.menus = []
         self.gui_title = title
         self.interactive = interactive
         self.functions = []
@@ -330,9 +335,10 @@ class Parser:
         self.log_on = False
         self.text = ''
         self.credits2 = ''
+        self.gui=None
         for arg in kwargs:
-            print arg
-            if type(arg) == function:
+            print(arg)
+            if type(arg) == FunctionType:
                 self.add_command(arg)
 
     def __call__(self):
@@ -352,14 +358,20 @@ class Parser:
         """
         self.params.append(param)
 
+    def add_tab(self, tab):
+        """This function adds an entire Menu into the parser
+        First argument must be a type of Menu
+        """
+        self.tabs.append(tab)
+        for param in tab.params:
+            self.params.append(param)
+        
     def add_menu(self, menu):
         """This function adds an entire Menu into the parser
         First argument must be a type of Menu
         """
-        self.tabs.append(menu)
-        for param in menu.params:
-            self.params.append(param)
-        
+        self.menus.append(menu)
+            
     def add_pre_command(self, function):
         """Adds a command to be done FIRST and never to be repeated
         """
@@ -440,7 +452,7 @@ class Parser:
     def is_text_mode(self):
         """Returns True/False if the mode is text based (no gui)
         """
-        return not is_gui_mode(self)
+        return not self.is_gui_mode()
 
     def get_mode(self):
         """Returns the string gui/text depending on mode
@@ -498,12 +510,12 @@ class Parser:
             elif arg.lower() == '--quit':
                 self.ask_quit = False
             elif arg.startswith('--help'):
-				if ARGS[0]=='dualfoil.py':
-					RunDualfoilHelp()
-					sys.exit()
-				elif ARGS[0]=='visualize.py':
-					RunVisualizeHelp()
-				sys.exit()
+                if ARGS[0]=='dualfoil.py':
+                    RunDualfoilHelp()
+                    sys.exit()
+                elif ARGS[0]=='visualize.py':
+                    RunVisualizeHelp()
+                sys.exit()
             elif arg.startswith('--') and '=' in arg:
                 arg = arg[2:]
                 name = arg.split('=')[0]
@@ -513,14 +525,6 @@ class Parser:
                         if param.type == float or param.type == int or param.type == str:
                             param.default = param.type(value)
                             param.out = param.default
-                        if param.type == file:
-                            param.filename = value
-                            if param.filetype.startswith('o'):
-                                param.out = open(param.filename, 'r')
-                            elif param.filetype.startswith('s'):
-                                param.out = open(param.filename, 'w')
-                            else: #direcotry
-                                param.out = param.filename
                         if type(param.type) == list:
                             def makeList(ls):
                                 #print ls
@@ -547,7 +551,7 @@ class Parser:
                                        # print 'tick'
                                         ls = ls[:i] + '`' + ls[i+1:]
                                 if bc != 0:
-                                    print 'Incorrect format for type List'
+                                    print('Incorrect format for type List')
                                     sys.exit()
                                 ls = ls[1:]
                                 ls = ls[:-1]
@@ -559,8 +563,8 @@ class Parser:
                             param.out, param.default = out, out
         if gui:
             self.init_auto_mode()
-            gui = _GetParams(self.tabs, parser=self, credits=self.credits2, title=self.gui_title, update_text=self.update_text)
-            gui.get_result()
+            self.gui = _GetParams(self.tabs, parser=self, credits=self.credits2, title=self.gui_title, update_text=self.update_text)
+            self.gui.get_result()
         else:
             #calls callback function before returning
             self.update(forced=True)
@@ -597,7 +601,7 @@ class Parser:
             if self.interactive == Parser.ON or \
                     (self.interactive == Parser.AUTO and \
                     self.duration < self.time_threashold):
-				self()
+                        self()
 		#self.start()
             elif self.duration >= self.time_threashold and not self.asked:
                 self.asked = True
@@ -606,13 +610,8 @@ class Parser:
         def set_last(self):
             """Records the previous values
             """
-            for item in self.kwargs:
-                if not self.kwargs[item].type == file:
-                    #print self.last[item]()
-                    self.last[item] = deepcopy(self.kwargs[item]())
-                else: #FILE
-                    self.last[item] = self.kwargs[item]()
-                #print self.last[item]
+            for item in self.kwargs: 
+                self.last[item] = deepcopy(self.kwargs[item]())
                                 
         def changed(self):
             """checks if there is a change, if change occurs returns True 
@@ -661,7 +660,7 @@ if __name__ == '__main__':
  
     def strfunc(**kwargs):
         for arg in kwargs:
-            print kwargs[arg]
+            print(kwargs[arg])
 
     Parameter(name='string', menu=t1, default='text goes here', variable=str)
     Parameter(name='matrix1', menu=t2, default=[[1,2,3],[1,2,3],[1,2,3]], variable=list)

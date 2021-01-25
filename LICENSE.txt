@@ -1,3 +1,4 @@
+ Copyright (c) 2021, Jonas A. Krieger
  Copyright (c) 2015, Lucas Darby Robinson, R. Edwin García
 All rights reserved.
 
@@ -7,3 +8,7 @@ Redistributions of source code must retain the above copyright notice, this list
 Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 Neither the name of the Purdue University nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 'AS IS' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Dualfoil.f Fortran code:
+Copyright (c) 1998, John Newman
+You may make a copy of this program which you may personally and freely use in its unaltered form.  You may make changes for your own personal use to dualfoil.f's material database located in subroutines ekin (electrodes) and prop (electrolytes).  You may distribute this program subject to the conditions that it stays free of charge and that any duplication of this program must be essentially unaltered and must include this notice.  We make no warranties, expressed or implied, that this program is free of errors or that it will meet the requirements of your application. The author and publisher disclaim all liability for direct or consequential damages resulting from use of this program.

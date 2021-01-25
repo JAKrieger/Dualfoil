@@ -6,11 +6,14 @@
  #
  #  Author: Alex Bartol <nanohub@alexbartol.com>
  #       Copyright 2009
+ #  Author: Jonas A. Krieger <econversion@empa.ch>
+ #       Copyright 2021
  # 
  # ############################################################################
 from sys import argv as ARGS
-import Tkinter
-import tkMessageBox, tkFileDialog
+import tkinter
+import tkinter.messagebox as tkMessageBox
+import tkinter.filedialog as  tkFileDialog
 from VKML.gui.tk.Menu import Menu
 
 class Parameter:
@@ -18,7 +21,7 @@ class Parameter:
     Parser
     """	
     def __init__(self, name, display_name='', menu=None, parser=None, variable=str, default='', 
-                    interval=(None, None), precision=1, filetype='open'):
+                    interval=(None, None), precision=1, filetype='open',button_text='Run'):
         """
         name - Varaible name
         menu - the Menu this should be added to (trumps parser)
@@ -29,6 +32,7 @@ class Parameter:
         filetype - should only be used for type of file (acceptable values are 'open', 'save' and 'directory')
         precision - the persision of a float value (if integer this is ignored and assumed '1')
             precision is measured in decimal points (1 == '0.0', 2 == '0.00' and so on)
+        button_text - string, optional: Text on function button
         
         <Parameter>() returns the current value for given variable
         """
@@ -53,22 +57,13 @@ class Parameter:
         self.out = default
         if self.type == tuple:
             self.out = self.out[0]
+        if self.type == dict:
+            self.out = self.out[list(self.out.keys())[0]]
         self.range = interval
         self.entry = None
+        self.label = None
+        self.button_text=button_text
         self.boolstatus = True
-        if self.type == file:
-            self.filename = self.default
-            if filetype.lower().startswith('o') or filetype.lower().startswith('r'):
-                filetype = 'open'
-            elif filetype.lower().startswith('s') or filetype.lower().startswith('w'):
-                filetype = 'save'
-            elif filetype.lower().startswith('d') or filetype.lower(). startswith('f'):
-                filetype = 'directory'
-                
-            if filetype == 'open' or filetype == 'save' or filetype == 'directory':
-                self.filetype = filetype
-            else:
-                print("Undeciferable FileType for: " + self.name)
         self.entry_special = None
         self.top = None
         self.precision = precision
@@ -144,12 +139,17 @@ class Parameter:
                                        str(self.type), title="Value Error")
         self.parser.update()
 
+    def get_Label(self,top,row,column):
+        if self.label ==None:
+            self.label=tkinter.Label(top, text=self.display_name)
+            self.label.grid(row=row,column=column)
+        return self.label
     
     def get_widget(self, top, row_number=0):
         """Returns the widget for the specified parameter
         lists return a button that links to the window
         
-        top is the Tkinter toplevel window
+        top is the tkinter toplevel window
         row_number is the row number
         """
         self.top = top
@@ -161,119 +161,87 @@ class Parameter:
                 """swaps the status of the boolean linked to the checkbox"""
                 self.boolstatus = not self.boolstatus
                 self.update()
-            self.entry = Tkinter.Checkbutton(top, command=on_press)
+            #The name argument is currently necessary due to a bug in tkinter
+            #see https://bugs.python.org/issue29402
+            alnum_name=''.join(e for e in self.name if e.isalnum())
+            self.entry = tkinter.Checkbutton(top,command=on_press,name='!checkbutton_{}'.format(alnum_name))
             if self.out == True:
                 self.entry.select()
                 on_press() #changes boolstatus
             else:
                 self.entry.deselect()
-            self.entry.grid(row=row_number, column=1, sticky=Tkinter.E)
+            self.entry.grid(row=row_number, column=1, sticky=tkinter.E)
         elif type(self.type) == list or self.type == list:
-            self.entry = Tkinter.Button(top, text='MODIFY', 
+            self.entry = tkinter.Button(top, text='MODIFY', 
                               command=(lambda i=0: _show_list_window(self) ))
-            self.entry.grid(row=row_number, column=1, sticky=Tkinter.E)
+            self.entry.grid(row=row_number, column=1, sticky=tkinter.E)
         elif self.type == float:
-            self.entry = Tkinter.Scale(top, from_=self.range[0], 
-                              to=self.range[1], orient=Tkinter.HORIZONTAL,
+            self.entry = tkinter.Scale(top, from_=self.range[0], 
+                              to=self.range[1], orient=tkinter.HORIZONTAL,
                               showvalue=False, 
                               command=(lambda i=0 : self.update()), 
                               resolution=1.0/(10**self.precision))
             self.entry.set(self.out)
-            self.entry.grid(row=row_number, column=1, sticky=Tkinter.E)
+            self.entry.grid(row=row_number, column=1, sticky=tkinter.E)
         elif self.type == int:
-            self.entry = Tkinter.Scale(top, from_=self.range[0], 
+            self.entry = tkinter.Scale(top, from_=self.range[0], 
                                      to=self.range[1], showvalue=False,
-                                     orient=Tkinter.HORIZONTAL, 
+                                     orient=tkinter.HORIZONTAL, 
                                      command=(lambda i=0 : self.update()),)
             self.entry.set(self.out)
-            self.entry.grid(row=row_number, column=1, sticky=Tkinter.E)
-        elif self.type == file:
-            self.entry = Tkinter.Label(top, text=self.filename)
-            self.entry.grid(row=row_number, column=1, sticky=Tkinter.E)
+            self.entry.grid(row=row_number, column=1, sticky=tkinter.E)
             
-            def set_file():
-                """function that is run when the 'Browse' button is hit
-                """
-                try:
-                    if self.filetype == 'open':
-                        f = tkFileDialog.askopenfile()
-                        if not f == None:
-                            self.out = f
-                    elif self.filetype == 'save':
-                        f = tkFileDialog.asksaveasfile()
-                        if not f == None:
-                            self.out = f
-                    else: #filetype = directory:
-                        self.out = tkFileDialog.askdirectory()
-                        self.filename = self.out
-                        self.entry['text'] = self.out
-                        return
-                    self.entry['text'] = self.out.name
-                    self.filename = self.out.name
-                    self.parser.update()
-                except AttributeError:
-                    pass
-                
-            self.entry_special = Tkinter.Button(top, text='Browse',
-                                             command=set_file)
-            self.entry_special.grid(row=row_number, column=2)
-        
         elif self.type == str:
-            self.entry = Tkinter.Entry(top)
+            self.entry = tkinter.Entry(top)
             self.entry.grid(row=row_number, column=1)
-            #self.entry.bind('<Enter>', self.update)
-            #self.entry.bind('<Return>', self.update)
-            #self.entry.bind('<FocusOut>', self.update)
             self.entry.bind('<KeyRelease>', self.update)
-            #self.entry.bind('<Tab>', self.update)
             self.entry.insert(0, self.out)
         
         elif self.type == 'label':
             if self.default.lower().endswith('.jpg') or self.default.lower().endswith('.gif'):
                 try:
-                    import ImageTk
-                    self.photo = ImageTk.PhotoImage(file=self.default)
-                    self.entry = Tkinter.Canvas(top, width=self.photo.width(), height=self.photo.height())
-                    self.entry.create_image(0,0,image=self.photo, anchor=Tkinter.NW)   
-                except Tkinter.TclError:
-                    self.entry = Tkinter.Label(top, text="Error Loading Image: " + self.default)
-		except ImportError:
-                    self.entry = Tkinter.Label(top, text='Image Error with image: ' + self.default + '\nPython imageTk must be installed to display images')
+                    #import ImageTk
+                    self.photo = tkinter.PhotoImage(file=self.default)
+                    self.entry = tkinter.Canvas(top, width=self.photo.width(), height=self.photo.height())
+                    self.entry.create_image(0,0,image=self.photo, anchor=tkinter.NW)   
+                except tkinter.TclError:
+                    self.entry = tkinter.Label(top, text="Error Loading Image: " + self.default)
+                except ImportError:
+                    self.entry = tkinter.Label(top, text='Image Error with image: ' + self.default + '\nPython imageTk must be installed to display images')
 
             else:
-                self.entry = Tkinter.Label(top, text=self.default)
-            self.entry.grid(row=row_number, column=2)
+                self.entry = tkinter.Label(top, text=self.default)
+            self.entry.grid(row=row_number, column=1)
             
         elif self.type == 'image':
             def viewimage(event=None):
-                root = Tkinter.Toplevel()
+                root = tkinter.Toplevel()
                 root.title(self.default)
-                frame = Tkinter.Frame(root, colormap="new", visual='truecolor').pack()
+                frame = tkinter.Frame(root, colormap="new", visual='truecolor').pack()
                 try:
-                    import ImageTk
-                    img = ImageTk.PhotoImage(file=self.default)
+                    img = tkinter.PhotoImage(file=self.default)
                     #OH GOD! DON'T TOUCH IT!!!
                     root.geometry("%dx%d%+d%+d" % (img.width(),img.height(), int(top.geometry().split('+')[-2])+int(top.geometry().split('x')[0]), int(top.geometry().split('+')[-1])))
-                    c = Tkinter.Canvas(root, width=img.width(), height=img.height())
+                    c = tkinter.Canvas(root, width=img.width(), height=img.height())
                     c.place(x=0,y=0)
                 
                     def die(event=None):
                         root.destroy()
-                    c.create_image(0, 0, image=img, anchor=Tkinter.NW)
+                    c.create_image(0, 0, image=img, anchor=tkinter.NW)
                     c.bind('<Button-1>', die)
-                except Tkinter.TclError:
-                    l = Tkinter.Label(root, text='Image Error with image: ' + self.default + '\nImage may be missing or of incompatable type')
+                except tkinter.TclError:
+                    l = tkinter.Label(root, text='Image Error with image: ' + self.default + '\nImage may be missing or of incompatable type')
                     l.pack()
                 except ImportError:
-                    l = Tkinter.Label(root, text='Image Error with image: ' + self.default + '\nPython imageTk must be installed to display images')
+                    l = tkinter.Label(root, text='Image Error with image: ' + self.default + '\nPython imageTk must be installed to display images')
                     l.pack()
                     
                 root.mainloop()
-            self.entry = Tkinter.Button(top, text='Display', command=viewimage)
+            self.entry = tkinter.Button(top, text='Display', command=viewimage)
             self.entry.grid(row=row_number, column=1)
 
         elif self.type == 'function':
-            #l = Tkinter.Label(top, text=self.name)
+            
             kwargs = {}
             kwgs = False
             import inspect
@@ -291,27 +259,41 @@ class Parameter:
                     kwargs[param.name] = param
                     
             f = self.parser._command(self.default, kwargs, -1)
-            self.entry = Tkinter.Button(top, text='Run', command=f.force_run)
-            #l.grid(row=row_number, column=1)
+            
+            self.entry = tkinter.Button(top, text=self.button_text, command=f.force_run)
             self.entry.grid(row=row_number, column=1)
             
         elif self.type == tuple:
-            var = Tkinter.StringVar(top)
+            var = tkinter.StringVar(top)
             #This was originally var.set(self.default[0]) -L.R.
             var.set(self.out)
-            self.entry = apply(Tkinter.OptionMenu, 
-                                    (top, var) + tuple(self.default))
+            self.entry = tkinter.OptionMenu(*((top, var) + tuple(self.default)))
             def u(a=None, b=None, c=None):
                 self.out = var.get()
                 self.update
                 self.parser.update()
             var.trace_variable('w', u)
             self.entry.grid(row=row_number, column=1)
+                        
+        elif self.type == dict:
+            self.dict_var = tkinter.StringVar(top)
+            #This was originally var.set(self.default[0]) -L.R.
+            invdict=dict((v, k) for k, v in self.default.items())
+            self.dict_var.set(invdict[self.out])
+            self.entry = tkinter.OptionMenu(*((top, self.dict_var) + tuple(self.default.keys())))
+            def u(a=None, b=None, c=None):
+                self.out = self.default[self.dict_var.get()]
+                self.update
+                self.parser.update()
+            self.dict_var.trace_variable('w', u)
+            self.entry.grid(row=row_number, column=1)
+        
+        
             
         
         if self.type == float or self.type == int:
-            self.entry_special = Tkinter.Label(top, text=str(self.out))
-            self.entry_special.grid(row=row_number, column=2, sticky=Tkinter.E,
+            self.entry_special = tkinter.Label(top, text=str(self.out))
+            self.entry_special.grid(row=row_number, column=2, sticky=tkinter.E,
                                     ipadx=20)
             self.entry_special.bind(sequence='<Button-1>', 
                                     func=self.start_entry)
@@ -326,7 +308,7 @@ class Parameter:
     def start_entry(self, event):
         """Creates a popup Entry box that covers the Label
         """
-        class EntryBox(Tkinter.Toplevel):
+        class EntryBox(tkinter.Toplevel):
             """Internal class used to make the Label's 'editable
             """
             def __init__(self, command=None, type=None):
@@ -335,8 +317,8 @@ class Parameter:
                 type is the necessary type for the label
                 """
                 self.command = command
-                Tkinter.Toplevel.__init__(self)
-                #self.withdraw()
+                tkinter.Toplevel.__init__(self)
+                
                 self.overrideredirect(1)
                 self.type = type
                 self.entry = None
@@ -354,7 +336,7 @@ class Parameter:
                 This meathod actually starts the window (and disables window
                 management fyi) 
                 """
-                self.entry = Tkinter.Entry(self, width=10)
+                self.entry = tkinter.Entry(self, width=10)
                 self.entry.insert(0, str(parameter.out))
                 self.entry.bind('<Return>', self._close)
                 self.entry.bind('<KP_Enter>', self._close)
@@ -370,8 +352,8 @@ class Parameter:
                 
                 try:
                     self.grab_set_global()
-                    #self.grab_set()
-                except Tkinter.TclError:
+                    
+                except tkinter.TclError:
                     pass
 
             def _close(self, event=None):
@@ -429,6 +411,7 @@ class Parameter:
             return "\tCell " + chr(ord('A')+j) + " : " + str(i) +\
                    '\n\nExpected ' + str(self.type[i][j]) + ', Recieved "'+\
                    str(test[i][j]) + '"'
+                   
     def get_widget_value(self):
         """returns the value for the widget
         for lists it *assumes* it is correct because lists are checked later
@@ -444,10 +427,45 @@ class Parameter:
                 return self.boolstatus
             elif type(self.type) == list:
                 return self.out
-            elif self.type == file:
-                #self.out.flush()
-                return self.filename
         raise AttributeError
+        
+                
+    def set_widget_value(self, value=None):
+        """
+        Set the value of the widget
+        """
+        if value == None: #Nothing to set
+            return
+        try:
+            if self.type==str: #Tkinter Entry widget:
+                self.out=value
+                self.entry.delete(0,tkinter.END)#Delete content
+                self.entry.insert(0,self.out)
+            elif self.type==dict: #Tkinter OptionMenu widget:
+                invdict=dict((str(v), k) for k, v in self.default.items())
+                self.out=value
+                self.dict_var.set(invdict[self.out])
+            elif self.type==bool:
+                self.out=value
+                if value:
+                    self.entry.select()
+                else:
+                    self.entry.deselect()
+            elif self.withinrange(value):
+                self.out=value
+                if hasattr(self.entry_special,'keys') and 'text' in self.entry_special.keys():
+                    self.entry_special['keys']=self.out
+                print(self.entry)
+                self.entry.set(self.out)
+            self.parser.update()
+            return
+        except Exception: pass
+        tkMessageBox.showerror(message="Value Error for Variable: " + 
+                                        self.name + "\nExpected value from:\n" +
+                                        self.getrange() + '\nWith type: ' + 
+                                        str(self.type), title="Value Error")
+
+        
     def getrange(self):
         """Returns a string of the range available and adjusts for the variable
         type.
@@ -472,14 +490,6 @@ class Parameter:
     def __call__(self):
         """<Parameter>() is returned as self.out
         """
-        if self.type == file and type(self.out) == str:
-            try:
-                if self.filetype.startswith('s'):
-                    return open(self.out, 'w')
-                assert self.filetype.startswith('o')
-                return open(self.out, 'r')
-            except IOError:
-                return None
         return self.out
 
     def __str__(self):
@@ -512,41 +522,41 @@ def _show_list_window(param):
         tmptop.destroy()
         tmpwindow.destroy()
 
-    tmpwindow = Tkinter.Tk()
+    tmpwindow = tkinter.Tk()
     tmpwindow.withdraw()
-    tmptop = Tkinter.Toplevel(tmpwindow)
+    tmptop = tkinter.Toplevel(tmpwindow)
     tmptop.title(param.name)
     param.out = param.default
     boxes = []
     for i in range(len(param.default)):
         if type(param.default[i]) == list:
             for j in range(len(param.out[i])):
-                Tkinter.Label(tmptop, text=chr(ord('A')+i)).grid(row=0, 
+                tkinter.Label(tmptop, text=chr(ord('A')+i)).grid(row=0, 
                                                                 column=i+1)
-                Tkinter.Label(tmptop, text=str(j)).grid(row=j+1, column=0)
-                boxes.append( Tkinter.Entry(tmptop) )
+                tkinter.Label(tmptop, text=str(j)).grid(row=j+1, column=0)
+                boxes.append( tkinter.Entry(tmptop) )
                 boxes[-1].insert(0, param.out[i][j])
                 boxes[-1].grid(row=i+1, column=j+1)
         else:
-            Tkinter.Label(tmptop, text=chr(ord('A')+i)).grid(row=0, 
+            tkinter.Label(tmptop, text=chr(ord('A')+i)).grid(row=0, 
                                                              column=i+1)
-            boxes.append(Tkinter.Entry(tmptop))
+            boxes.append(tkinter.Entry(tmptop))
             boxes[-1].insert(0, param.out[i])
             boxes[-1].grid(row=1, column=i+1)
-            Tkinter.Label(tmptop, text='0').grid(row=1, column=0)
+            tkinter.Label(tmptop, text='0').grid(row=1, column=0)
     def swap():
         global persistant
         persistant = not persistant
-    c_box = Tkinter.Checkbutton(tmptop, command=swap, 
+    c_box = tkinter.Checkbutton(tmptop, command=swap, 
 text="Persistent")
     c_box.grid(row=len(param.default)+1, column=len(param.default[0]) )
     
-    u_button = Tkinter.Button(tmptop, text='Update', 
+    u_button = tkinter.Button(tmptop, text='Update', 
                    command=destroy)
     u_button.grid(row=len(param.default)+1, column=0, 
                     columnspan=len(param.default[0]))
     u_button.bind('<Return>', destroy)
-    c_button = Tkinter.Button(tmptop, text='Cancel',
+    c_button = tkinter.Button(tmptop, text='Cancel',
                    command=cancel)
     c_button.grid(row=len(param.default)+1,
                   column=1+len(param.default[0])/2)

@@ -1,0 +1,6 @@
+__pycache__
+src
+Output*
+bin/directories.txt
+bin/build
+bin/dist
